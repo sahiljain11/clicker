@@ -1,6 +1,6 @@
 class Box
     attr_reader :id, :location, :threshold_val, :visible, :money_rate, :current_time, :current_level,
-                :final_level, :price, :vis_threshold
+                :final_level, :price, :vis_threshold, :color
 
     def initialize (id_num, x, y)
         @id            = id_num
@@ -12,8 +12,8 @@ class Box
         @current_level = 0
         @price         = 2 * 10**id_num
         @final_level   = 5
-        @time_interval = 10
-        puts("Testing?" + " " + vis_threshold.to_s)
+        @time_interval = 300 * id_num
+        @color         = [rand(255), rand(255), rand(255)]
     end
 
     def update (current_money)
@@ -27,21 +27,34 @@ class Box
     end
 
     def update_money (current_money)
-        current_money += @money_rate if @current_time == @time_interval
+        current_money += @money_rate if @current_time >= @time_interval
+        @current_time = 0 if @current_time >= @time_interval
         return current_money
     end
 
     def purchase (current_money)
-        if @price < current_money && @current_level != @final_level
+        if @price <= current_money && @current_level != @final_level
             current_money -= @price
             @price *= 1.25
             @current_level += 1
             @time_interval /= 2
+            @current_time = 0
             @money_rate *= 1.25
         end
         return current_money
     end
+
+    def percentage
+      return 1 if @current_time == @time_interval    #accounts for @time_interval being zero
+      #return 
+        return @current_time / @time_interval
+    end
     
+    def stringRep
+        return "Box #" + @id.to_s if @current_level == @final_level
+        return "$#{@price.round()} Lv. " + @current_level.to_s + "/" + @final_level.to_s
+    end
+
 end
 
 class Clicker
@@ -83,20 +96,28 @@ class Clicker
     end
 
     def render
+        #state.money = state.money.round(2)
+
         #get the basic button in the middle (the clicker)
         outputs.sprites << [500 - (state.main_size / 2), 360 - (state.main_size / 2),
                             state.main_size, state.main_size, "sprites/circle-gray.png"]
 
         #get the current amount of money present
-        outputs.labels << [145, 680, "Money:"]
-        outputs.labels << [170, 635, "$" + state.money.to_s, 1, 1]
+        outputs.labels  << [145, 680, "Money:"]
+        outputs.labels  << [170, 635, "$#{state.money.round()}", 1, 1]
         outputs.borders << [75, 600, 200, 50]
 
         #render boxes if they're visible
         state.num_boxes.times do |n|
             if state.boxes[n].visible == true
-                    outputs.borders << [state.boxes[n].location[0], state.boxes[n].location[1],
-                                        state.rect_size[0], state.rect_size[1]]
+                temp = state.boxes[n]
+                outputs.borders << [temp.location[0], temp.location[1],
+                                    state.rect_size[0], state.rect_size[1]]
+                outputs.labels  << [temp.location[0] + 73, temp.location[1] + 35,
+                                     temp.stringRep, 1, 1]
+                outputs.solids  << [temp.location[0], temp.location[1],
+                                    temp.percentage * state.rect_size[0], state.rect_size[1],
+                                    temp.color[0], temp.color[1], temp.color[2]]
             end
         end
     end
@@ -128,10 +149,15 @@ class Clicker
 
         #add purchasing
         state.num_boxes.times do |n|
-            if inputs.keyboard.key_down.((":" + n.to_s).to_e)
-                state.money = state.boxes[n - 1].purchase(state.money)
-            end
+            #if inputs.keyboard.key_down.((n.to_sym))
+            #    state.money = state.boxes[n - 1].purchase(state.money)
+            #end
         end
+        state.money = state.boxes[0].purchase(state.money) if inputs.keyboard.key_down.one
+        state.money = state.boxes[1].purchase(state.money) if inputs.keyboard.key_down.two
+        state.money = state.boxes[2].purchase(state.money) if inputs.keyboard.key_down.three
+        state.money = state.boxes[3].purchase(state.money) if inputs.keyboard.key_down.four
+        state.money = state.boxes[4].purchase(state.money) if inputs.keyboard.key_down.five
     end
 
 end
