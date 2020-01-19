@@ -1,5 +1,5 @@
 
-w Resolution Graphics
+# Clicker Game
 
 ![Gameplay](clicker.gif)
 (Gameplay is much less laggy. gif creation software **significantly** slows gamplay down)
